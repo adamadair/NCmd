@@ -13,7 +13,7 @@ namespace NCmd
     /// </summary>
     public abstract class Cmd
     {
-        private const string DocumentedCommandsText = "Documented commands (type help <topic>):";        
+        private const string DocumentedCommandsText = "Documented commands (type help <topic>):";
         private const string UndocumentedCommandsText = "Undocumented Commands:";
 
         private bool _isInLoop;
@@ -70,23 +70,28 @@ namespace NCmd
         /// <param name="line"></param>
         public virtual void PostCmd(string line)
         {
-            
         }
 
         /// <summary>
         /// Hook method executed once when CmdLoop() is called.
         /// </summary>
-        public virtual void PreLoop() { }
+        public virtual void PreLoop()
+        {
+        }
 
         /// <summary>
         /// Hook method executed once when CmdLoop() is about to return.
         /// </summary>
-        public virtual void PostLoop() { }
+        public virtual void PostLoop()
+        {
+        }
 
         /// <summary>
         /// Method called when an empty line is entered in response to the prompt.
         /// </summary>
-        public virtual void EmptyLine() { }      
+        public virtual void EmptyLine()
+        {
+        }
 
         public virtual void HandleException(Exception ex)
         {
@@ -111,7 +116,7 @@ namespace NCmd
         /// </summary>
         public void ExitLoop()
         {
-            IsExiting = true;            
+            IsExiting = true;
         }
 
         /// <summary>
@@ -136,11 +141,11 @@ namespace NCmd
         /// 
         /// </summary>
         public void CmdLoop()
-        {                        
-            if (_isInLoop) return;  // just in case of multithreaded shennanigans 
+        {
+            if (_isInLoop) return; // just in case of multithreaded shennanigans 
             _isInLoop = true;
 
-            if(!_isInitialized)
+            if (!_isInitialized)
                 InitCommandDictionary();
 
             if (Intro.Length > 0)
@@ -166,7 +171,7 @@ namespace NCmd
 
                     HandleCommandString(userInput);
                     PostCmd(userInput);
-                    
+
                     // At this point it is safe to save the command history. 
                     // Any commands that cause an exception should not be saved to 
                     // history.
@@ -192,7 +197,7 @@ namespace NCmd
         {
             if (_commands == null)
                 _commands = new Dictionary<string, ICommand>();
-            _commands.Add(command.CommandName.ToLower(), command);            
+            _commands.Add(command.CommandName.ToLower(), command);
         }
 
         private ICommand FindCommand(string commandName)
@@ -255,7 +260,6 @@ namespace NCmd
         }
 
 
-
         /// <summary>
         /// InitCommandDictionary uses reflection to find shell command methods
         /// and sets up the command dictionary for use by the shell loop.
@@ -273,7 +277,6 @@ namespace NCmd
                 var isCommand = false;
                 foreach (var attr in method.GetCustomAttributes())
                 {
-
                     // First check for attributes that explicitly define 
                     // command methods.
 
@@ -292,7 +295,6 @@ namespace NCmd
                 if (isCommand) continue;
                 if (method.Name.StartsWith("Do_"))
                 {
-
                     // Secondly, check if the method is a command through
                     // naming convention. Anthing that starts with Do_ should
                     // be considered a command.
@@ -300,7 +302,7 @@ namespace NCmd
                     var cmd = method.Name.Substring(3);
                     var command = new AutoCommand(this, method, cmd);
                     AddCommand(command);
-                }                
+                }
             }
             InitHelp(thisType);
         }
@@ -309,9 +311,8 @@ namespace NCmd
 
         private void InitHelp(Type thisType)
         {
-            
             var props = thisType.GetProperties();
-            var fields = thisType.GetFields();            
+            var fields = thisType.GetFields();
 
             foreach (var p in fields)
             {
@@ -319,18 +320,18 @@ namespace NCmd
                 foreach (var attr in p.GetCustomAttributes())
                 {
                     if (!(attr is CmdCommandHelpAttribute)) continue;
-                    var a = (CmdCommandHelpAttribute)attr;
+                    var a = (CmdCommandHelpAttribute) attr;
                     if (!_commands.ContainsKey(a.Command)) continue;
                     _commands[a.Command].HelpText = p.GetValue(this).ToString();
                     isFound = true;
                     break;
                 }
-                if (isFound) continue;                
+                if (isFound) continue;
                 if (!p.Name.StartsWith("Help_")) continue;
                 var command = p.Name.Replace("Help_", "");
                 if (_commands.ContainsKey(command))
                 {
-                    _commands[command].HelpText = p.GetValue(this).ToString();                                                        
+                    _commands[command].HelpText = p.GetValue(this).ToString();
                 }
             }
 
@@ -339,17 +340,17 @@ namespace NCmd
                 foreach (var attr in p.GetCustomAttributes())
                 {
                     if (!(attr is CmdCommandHelpAttribute)) continue;
-                    var a = (CmdCommandHelpAttribute)attr;
+                    var a = (CmdCommandHelpAttribute) attr;
                     if (_commands.ContainsKey(a.Command))
                     {
                         _commands[a.Command].HelpText = p.GetValue(this, null).ToString();
                     }
                 }
             }
-
         }
 
-        [CmdCommand(Command = "help", Description = "List available commands with \"help\" or detailed help with \"help cmd\".")]
+        [CmdCommand(Command = "help",
+            Description = "List available commands with \"help\" or detailed help with \"help cmd\".")]
         public virtual void CmdGetHelp(string arg)
         {
             if (string.IsNullOrWhiteSpace(arg))
@@ -407,7 +408,7 @@ namespace NCmd
             if (undocumented.Count > 0)
             {
                 var cCount = 0;
-                sb.Append("\n" + UndocumentedCommandsText+"\n");
+                sb.Append("\n" + UndocumentedCommandsText + "\n");
                 for (var i = 0; i < UndocumentedCommandsText.Length; ++i)
                     sb.Append("=");
                 sb.Append("\n");
@@ -427,6 +428,7 @@ namespace NCmd
             sb.Append("\n");
             Console.WriteLine(sb.ToString());
         }
-        #endregion               
-    }    
+
+        #endregion
+    }
 }
