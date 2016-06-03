@@ -1065,16 +1065,6 @@ namespace NCmd
                 _cursor = _head;
             }
 
-            public void Dump()
-            {
-                C.WriteLine($"Head={_head} Tail={_tail} Cursor={_cursor} count={_count}");
-                for (var i = 0; i < _history.Length; i++)
-                {
-                    C.WriteLine($" {(i == _cursor ? "==>" : "   ")} {i}: {_history[i]}");
-                }
-                //log.Flush ();
-            }
-
             public string SearchBackward(string term)
             {
                 for (var i = 0; i < _count; i++)
