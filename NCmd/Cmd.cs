@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Security;
 using System.Text;
 using C = NCmd.SimpleConsole;
 
@@ -306,6 +307,97 @@ namespace NCmd
             }
             InitHelp(thisType);
         }
+
+        #region Convenience Console Methods
+
+        /// <summary>
+        /// Gets input from user.
+        /// </summary>
+        /// <param name="prompt">text prompt displayed to the user</param>
+        /// <returns>the string of text the user entered</returns>
+        public string GetInput(string prompt)
+        {
+            Console.Write(prompt);
+            return Console.ReadLine();
+        }
+
+        /// <summary>
+        /// Gets input from the user. Will continue to prompt user until
+        /// input is entered
+        /// </summary>
+        /// <param name="prompt">text prompt displayed to the user</param>
+        /// <returns>The string of text the user entered</returns>
+        public string GetRequiredInput(string prompt)
+        {
+            var resp = "";
+            while (string.IsNullOrWhiteSpace(resp))
+            {
+                Console.Write(prompt);
+                resp = Console.ReadLine();
+            }
+            return resp;
+        }
+
+        /// <summary>
+        /// Get a password from the user. The text will not be displayed to the 
+        /// screen.
+        /// </summary>
+        /// <param name="prompt">Text prompt displayed to the user.</param>
+        /// <returns>The password in a SecureString instance.</returns>
+        public SecureString GetPassword(string prompt)
+        {
+            Console.Write(prompt);
+            return GetPassword();
+        }
+
+        /// <summary>
+        /// Get a password from the user. The text will not be displayed to the screen.
+        /// </summary>
+        /// <returns>The password in a SecureString instance.</returns>
+        public SecureString GetPassword()
+        {
+            var pwd = new SecureString();
+            while (true)
+            {
+                var i = Console.ReadKey(true);
+                if (i.Key == ConsoleKey.Enter)
+                {
+                    break;
+                }
+                if (i.Key == ConsoleKey.Backspace)
+                {
+                    if (pwd.Length <= 0) continue;
+                    pwd.RemoveAt(pwd.Length - 1);
+                    Console.Write("\b \b");
+                }
+                else
+                {
+                    pwd.AppendChar(i.KeyChar);
+                    Console.Write("*");
+                }
+            }
+            pwd.MakeReadOnly();
+            return pwd;
+        }
+
+        public void WriteLine(string ln)
+        {
+            Console.WriteLine(ln);
+        }
+
+        public void WriteLine(string ln, params object[] p)
+        {
+            Console.WriteLine(ln, p);
+        }
+
+        public void WriteLine() { Console.WriteLine();}
+
+        public void Write(string ln)
+        {
+            Console.Write(ln);
+        }
+
+        #endregion
 
         #region Help System Methods
 
