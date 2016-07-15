@@ -1,6 +1,6 @@
-﻿// GetOpt - Command line option handler.
+﻿// ArgParse.cs - makes it easy to write user-friendly command-line interfaces.
 //
-// Option format strings:
+// Argument format strings:
 //  Regex-like BNF Grammar: 
 //    name: .+
 //    type: [=:]
@@ -14,24 +14,24 @@
 // alias, but if they are provided on more than one they must be consistent.
 //
 // Each alias portion may also end with a "key/value separator", which is used
-// to split option values if the option accepts > 1 value.  If not specified,
+// to split Argument values if the Argument accepts > 1 value.  If not specified,
 // it defaults to '=' and ':'.  If specified, it can be any character except
 // '{' and '}' OR the *string* between '{' and '}'.  If no separator should be
 // used (i.e. the separate values should be distinct arguments), then "{}"
 // should be used as the separator.
 //
-// Options are extracted either from the current option by looking for
-// the option name followed by an '=' or ':', or is taken from the
-// following option IFF:
-//  - The current option does not contain a '=' or a ':'
-//  - The current option requires a value (i.e. not a Option type of ':')
+// Options are extracted either from the current Argument by looking for
+// the Argument name followed by an '=' or ':', or is taken from the
+// following Argument IFF:
+//  - The current Argument does not contain a '=' or a ':'
+//  - The current Argument requires a value (i.e. not a Argument type of ':')
 //
-// The `name' used in the option format string does NOT include any leading
-// option indicator, such as '-', '--', or '/'.  All three of these are
-// permitted/required on any named option.
+// The `name' used in the Argument format string does NOT include any leading
+// Argument indicator, such as '-', '--', or '/'.  All three of these are
+// permitted/required on any named Argument.
 //
-// Option bundling is permitted so long as:
-//   - '-' is used to start the option group
+// Argument bundling is permitted so long as:
+//   - '-' is used to start the Argument group
 //   - all of the bundled options are a single character
 //   - at most one of the bundled options accepts a value, and the value
 //     provided starts from the next character to the end of the string.
@@ -39,14 +39,14 @@
 // This allows specifying '-a -b -c' as '-abc', and specifying '-D name=value'
 // as '-Dname=value'.
 //
-// Option processing is disabled by specifying "--".  All options after "--"
-// are returned by OptionSet.Parse() unchanged and unprocessed.
+// Argument processing is disabled by specifying "--".  All options after "--"
+// are returned by ArgumentParser.Parse() unchanged and unprocessed.
 //
-// Unprocessed options are returned from OptionSet.Parse().
+// Unprocessed options are returned from ArgumentParser.Parse().
 //
 // Examples:
 //  int verbose = 0;
-//  OptionSet p = new OptionSet ()
+//  ArgumentParser p = new ArgumentParser ()
 //    .Add ("v", v => ++verbose)
 //    .Add ("name=|value=", v => Console.WriteLine (v));
 //  p.Parse (new string[]{"-v", "--v", "/v", "-name=A", "/name", "B", "extra"});
@@ -57,30 +57,30 @@
 // The returned array would contain the string "extra".
 //
 // C# 3.0 collection initializers are supported and encouraged:
-//  var p = new OptionSet () {
+//  var p = new ArgumentParser () {
 //    { "h|?|help", v => ShowHelp () },
 //  };
 //
 // System.ComponentModel.TypeConverter is also supported, allowing the use of
 // custom data types in the callback type; TypeConverter.ConvertFromString()
-// is used to convert the value option to an instance of the specified
+// is used to convert the value Argument to an instance of the specified
 // type:
 //
-//  var p = new OptionSet () {
+//  var p = new ArgumentParser () {
 //    { "foo=", (Foo f) => Console.WriteLine (f.ToString ()) },
 //  };
 //
 // Random other tidbits:
-//  - Boolean options (those w/o '=' or ':' in the option format string)
+//  - Boolean options (those w/o '=' or ':' in the Argument format string)
 //    are explicitly enabled if they are followed with '+', and explicitly
 //    disabled if they are followed with '-':
 //      string a = null;
-//      var p = new OptionSet () {
+//      var p = new ArgumentParser () {
 //        { "a", s => a = s },
 //      };
-//      p.Parse (new string[]{"-a"});   // sets v != null
-//      p.Parse (new string[]{"-a+"});  // sets v != null
-//      p.Parse (new string[]{"-a-"});  // sets v == null
+//      p.Parse (new string[]{"-a"});   // sets a != null
+//      p.Parse (new string[]{"-a+"});  // sets a != null
+//      p.Parse (new string[]{"-a-"});  // sets a == null
 //
 
 using System;
@@ -95,7 +95,7 @@ using System.Text.RegularExpressions;
 
 namespace NCmd
 {
-    internal static class StringFunx
+    internal static class StringUtilityFunctions
     {
         public static IEnumerable<string> WrappedLines(string self, params int[] widths)
         {
@@ -155,7 +155,6 @@ namespace NCmd
                 throw new ArgumentOutOfRangeException(nameof(curWidth),
                     $"Element must be >= {minWidth.Length}, was {curWidth}.");
             return curWidth;
-            // no more elements, use the last element.
         }
 
         private static bool IsEolChar(char c)
@@ -180,13 +179,13 @@ namespace NCmd
         }
     }
 
-    public class OptionValueCollection : IList, IList<string>
+    public class ArgumentValueCollection : IList, IList<string>
     {
-        private readonly OptionContext _c;
+        private readonly ArgumentContext _c;
 
         private readonly List<string> _values = new List<string>();
 
-        internal OptionValueCollection(OptionContext c)
+        internal ArgumentValueCollection(ArgumentContext c)
         {
             _c = c;
         }
@@ -331,15 +330,15 @@ namespace NCmd
 
         private void AssertValid(int index)
         {
-            if (_c.Option == null)
-                throw new InvalidOperationException("OptionContext.Option is null.");
-            if (index >= _c.Option.MaxValueCount)
+            if (_c.Argument == null)
+                throw new InvalidOperationException("ArgumentContext.Argument is null.");
+            if (index >= _c.Argument.MaxValueCount)
                 throw new ArgumentOutOfRangeException(nameof(index));
-            if (_c.Option.OptionValueType == OptionValueType.Required &&
+            if (_c.Argument.ArgumentValueType == ArgumentValueType.Required &&
                 index >= _values.Count)
-                throw new OptionException(string.Format(
-                    _c.OptionSet.MessageLocalizer("Missing required value for option '{0}'."), _c.OptionName),
-                    _c.OptionName);
+                throw new ArgParseException(string.Format(
+                    _c.ArgumentParser.MessageLocalizer("Missing required value for Argument '{0}'."), _c.ArgumentName),
+                    _c.ArgumentName);
         }
 
         public string this[int index]
@@ -355,47 +354,48 @@ namespace NCmd
         #endregion
     }
 
-    public class OptionContext
+    public class ArgumentContext
     {
-        public OptionContext(OptionSet set)
+        public ArgumentContext(ArgumentParser parser)
         {
-            OptionSet = set;
-            OptionValues = new OptionValueCollection(this);
+            ArgumentParser = parser;
+            ArgumentValues = new ArgumentValueCollection(this);
         }
 
-        public Option Option { get; set; }
+        public Argument Argument { get; set; }
 
-        public string OptionName { get; set; }
+        public string ArgumentName { get; set; }
 
-        public int OptionIndex { get; set; }
+        public int ArgumentIndex { get; set; }
 
-        public OptionSet OptionSet { get; }
+        public ArgumentParser ArgumentParser { get; }
 
-        public OptionValueCollection OptionValues { get; }
+        public ArgumentValueCollection ArgumentValues { get; }
     }
 
-    public enum OptionValueType
+    public enum ArgumentValueType
     {
         None,
         Optional,
         Required
     }
 
-    public abstract class Option
+    public abstract class Argument
     {
+       
         private static readonly char[] NameTerminator = {'=', ':'};
 
-        protected Option(string prototype, string description)
+        protected Argument(string prototype, string description)
             : this(prototype, description, 1, false)
         {
         }
 
-        protected Option(string prototype, string description, int maxValueCount)
+        protected Argument(string prototype, string description, int maxValueCount)
             : this(prototype, description, maxValueCount, false)
         {
         }
 
-        protected Option(string prototype, string description, int maxValueCount, bool hidden)
+        protected Argument(string prototype, string description, int maxValueCount, bool hidden)
         {
             if (prototype == null)
                 throw new ArgumentNullException(nameof(prototype));
@@ -407,38 +407,36 @@ namespace NCmd
             Prototype = prototype;
             Description = description;
             MaxValueCount = maxValueCount;
-            Names = this is OptionSet.Category
-                // append GetHashCode() so that "duplicate" categories have distinct
-                // names, e.g. adding multiple "" categories should be valid.
+            Names = this is ArgumentParser.Category
                 ? new[] {prototype + GetHashCode()}
                 : prototype.Split('|');
 
-            if (this is OptionSet.Category)
+            if (this is ArgumentParser.Category)
                 return;
 
-            OptionValueType = ParsePrototype();
+            ArgumentValueType = ParsePrototype();
             Hidden = hidden;
 
-            if (MaxValueCount == 0 && OptionValueType != OptionValueType.None)
+            if (MaxValueCount == 0 && ArgumentValueType != ArgumentValueType.None)
                 throw new ArgumentException(
-                    "Cannot provide maxValueCount of 0 for OptionValueType.Required or " +
-                    "OptionValueType.Optional.",
+                    "Cannot provide maxValueCount of 0 for ArgumentValueType.Required or " +
+                    "ArgumentValueType.Optional.",
                     nameof(maxValueCount));
-            if (OptionValueType == OptionValueType.None && maxValueCount > 1)
+            if (ArgumentValueType == ArgumentValueType.None && maxValueCount > 1)
                 throw new ArgumentException(
                     $"Cannot provide maxValueCount of {maxValueCount} for OptionValueType.None.",
                     nameof(maxValueCount));
             if (Array.IndexOf(Names, "<>") >= 0 &&
-                ((Names.Length == 1 && OptionValueType != OptionValueType.None) ||
+                ((Names.Length == 1 && ArgumentValueType != ArgumentValueType.None) ||
                  (Names.Length > 1 && MaxValueCount > 1)))
                 throw new ArgumentException(
-                    "The default option handler '<>' cannot require values.",
+                    "The default Argument handler '<>' cannot require values.",
                     nameof(prototype));
         }
 
         public string Prototype { get; }
         public string Description { get; }
-        public OptionValueType OptionValueType { get; }
+        public ArgumentValueType ArgumentValueType { get; }
         public int MaxValueCount { get; }
         public bool Hidden { get; }
 
@@ -457,7 +455,7 @@ namespace NCmd
             return (string[]) ValueSeparators.Clone();
         }
 
-        protected static T Parse<T>(string value, OptionContext c)
+        protected static T Parse<T>(string value, ArgumentContext c)
         {
             var tt = typeof(T);
             var nullable = tt.IsValueType && tt.IsGenericType &&
@@ -473,16 +471,16 @@ namespace NCmd
             }
             catch (Exception e)
             {
-                throw new OptionException(
+                throw new ArgParseException(
                     string.Format(
-                        c.OptionSet.MessageLocalizer("Could not convert string `{0}' to type {1} for option `{2}'."),
-                        value, targetType.Name, c.OptionName),
-                    c.OptionName, e);
+                        c.ArgumentParser.MessageLocalizer("Could not convert string `{0}' to type {1} for Argument `{2}'."),
+                        value, targetType.Name, c.ArgumentName),
+                    c.ArgumentName, e);
             }
             return t;
         }
 
-        private OptionValueType ParsePrototype()
+        private ArgumentValueType ParsePrototype()
         {
             var type = '\0';
             var seps = new List<string>();
@@ -490,7 +488,7 @@ namespace NCmd
             {
                 var name = Names[i];
                 if (name.Length == 0)
-                    throw new Exception("Empty option names are not supported.");
+                    throw new Exception("Empty Argument names are not supported.");
 
                 var end = name.IndexOfAny(NameTerminator);
                 if (end == -1)
@@ -500,17 +498,17 @@ namespace NCmd
                     type = name[end];
                 else
                     throw new Exception(
-                        $"Conflicting option types: '{type}' vs. '{name[end]}'.");
+                        $"Conflicting argument types: '{type}' vs. '{name[end]}'.");
                 AddSeparators(name, end, seps);
             }
 
             if (type == '\0')
-                return OptionValueType.None;
+                return ArgumentValueType.None;
 
             if (MaxValueCount <= 1 && seps.Count != 0)
                 throw new Exception(
-                    $"Cannot provide key/value separators for Options taking {MaxValueCount} value(s).");
-            if (MaxValueCount <= 1) return type == '=' ? OptionValueType.Required : OptionValueType.Optional;
+                    $"Cannot provide key/value separators for arguments taking {MaxValueCount} value(s).");
+            if (MaxValueCount <= 1) return type == '=' ? ArgumentValueType.Required : ArgumentValueType.Optional;
             if (seps.Count == 0)
                 ValueSeparators = new[] {":", "="};
             else if (seps.Count == 1 && seps[0].Length == 0)
@@ -518,7 +516,7 @@ namespace NCmd
             else
                 ValueSeparators = seps.ToArray();
 
-            return type == '=' ? OptionValueType.Required : OptionValueType.Optional;
+            return type == '=' ? ArgumentValueType.Required : ArgumentValueType.Optional;
         }
 
         private static void AddSeparators(string name, int end, ICollection<string> seps)
@@ -555,15 +553,15 @@ namespace NCmd
                     nameof(name));
         }
 
-        public void Invoke(OptionContext c)
+        public void Invoke(ArgumentContext c)
         {
             OnParseComplete(c);
-            c.OptionName = null;
-            c.Option = null;
-            c.OptionValues.Clear();
+            c.ArgumentName = null;
+            c.Argument = null;
+            c.ArgumentValues.Clear();
         }
 
-        protected abstract void OnParseComplete(OptionContext c);
+        protected abstract void OnParseComplete(ArgumentContext c);
 
         public override string ToString()
         {
@@ -588,7 +586,6 @@ namespace NCmd
             return GetArguments(reader, false);
         }
 
-        // Cribbed from mcs/driver.cs:LoadArgs(string)
         private static IEnumerable<string> GetArguments(TextReader reader, bool close)
         {
             try
@@ -644,7 +641,7 @@ namespace NCmd
 
     public class ResponseFileSource : ArgumentSource
     {
-        public override string Description => "Read response file for more options.";
+        public override string Description => "Read response file for more arguments.";
 
         public override string[] GetNames()
         {
@@ -664,53 +661,53 @@ namespace NCmd
     }
 
     [Serializable]
-    public class OptionException : Exception
+    public class ArgParseException : Exception
     {
-        public OptionException()
+        public ArgParseException()
         {
         }
 
-        public OptionException(string message, string optionName)
+        public ArgParseException(string message, string argumentName)
             : base(message)
         {
-            OptionName = optionName;
+            ArgumentName = argumentName;
         }
 
-        public OptionException(string message, string optionName, Exception innerException)
+        public ArgParseException(string message, string argumentName, Exception innerException)
             : base(message, innerException)
         {
-            OptionName = optionName;
+            ArgumentName = argumentName;
         }
 
-        protected OptionException(SerializationInfo info, StreamingContext context)
+        protected ArgParseException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            OptionName = info.GetString("OptionName");
+            ArgumentName = info.GetString("ArgumentName");
         }
 
-        public string OptionName { get; }
+        public string ArgumentName { get; }
 
     }
 
-    public delegate void OptionAction<TKey, TValue>(TKey key, TValue value);
+    public delegate void ArgumentAction<TKey, TValue>(TKey key, TValue value);
 
-    public class OptionSet : KeyedCollection<string, Option>
+    public class ArgumentParser : KeyedCollection<string, Argument>
     {
-        private const int OptionWidth = 29;
-        private const int DescriptionFirstWidth = 80 - OptionWidth;
-        private const int DescriptionRemWidth = 80 - OptionWidth - 2;
+        private const int ArgumentWidth = 29;
+        private const int DescriptionFirstWidth = 80 - ArgumentWidth;
+        private const int DescriptionRemWidth = 80 - ArgumentWidth - 2;
 
-        private readonly Regex _valueOption = new Regex(
+        private readonly Regex _valueArgument = new Regex(
             @"^(?<flag>--|-|/)(?<name>[^:=]+)((?<sep>[:=])(?<value>.*))?$");
 
         private readonly List<ArgumentSource> _sources = new List<ArgumentSource>();
 
-        public OptionSet()
+        public ArgumentParser()
             : this(f => f)
         {
         }
 
-        public OptionSet(Converter<string, string> localizer)
+        public ArgumentParser(Converter<string, string> localizer)
         {
             MessageLocalizer = localizer;
             ArgumentSources = new ReadOnlyCollection<ArgumentSource>(_sources);
@@ -721,25 +718,23 @@ namespace NCmd
         public ReadOnlyCollection<ArgumentSource> ArgumentSources { get; }
 
 
-        protected override string GetKeyForItem(Option item)
+        protected override string GetKeyForItem(Argument item)
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
             if (item.Names != null && item.Names.Length > 0)
                 return item.Names[0];
-            // This should never happen, as it's invalid for Option to be
-            // constructed w/o any names.
-            throw new InvalidOperationException("Option has no names!");
+            throw new InvalidOperationException("Argument has no names!");
         }
 
         [Obsolete("Use KeyedCollection.this[string]")]
-        protected Option GetOptionForName(string option)
+        protected Argument GetArgumentForName(string argument)
         {
-            if (option == null)
-                throw new ArgumentNullException(nameof(option));
+            if (argument == null)
+                throw new ArgumentNullException(nameof(argument));
             try
             {
-                return base[option];
+                return base[argument];
             }
             catch (KeyNotFoundException)
             {
@@ -747,7 +742,7 @@ namespace NCmd
             }
         }
 
-        protected override void InsertItem(int index, Option item)
+        protected override void InsertItem(int index, Argument item)
         {
             base.InsertItem(index, item);
             AddImpl(item);
@@ -756,32 +751,30 @@ namespace NCmd
         protected override void RemoveItem(int index)
         {
             var p = Items[index];
-            base.RemoveItem(index);
-            // KeyedCollection.RemoveItem() handles the 0th item
+            base.RemoveItem(index);            
             for (var i = 1; i < p.Names.Length; ++i)
             {
                 Dictionary.Remove(p.Names[i]);
             }
         }
 
-        protected override void SetItem(int index, Option item)
+        protected override void SetItem(int index, Argument item)
         {
             base.SetItem(index, item);
             AddImpl(item);
         }
 
-        private void AddImpl(Option option)
+        private void AddImpl(Argument argument)
         {
-            if (option == null)
-                throw new ArgumentNullException(nameof(option));
-            var added = new List<string>(option.Names.Length);
+            if (argument == null)
+                throw new ArgumentNullException(nameof(argument));
+            var added = new List<string>(argument.Names.Length);
             try
-            {
-                // KeyedCollection.InsertItem/SetItem handle the 0th name.
-                for (var i = 1; i < option.Names.Length; ++i)
+            {                
+                for (var i = 1; i < argument.Names.Length; ++i)
                 {
-                    Dictionary.Add(option.Names[i], option);
-                    added.Add(option.Names[i]);
+                    Dictionary.Add(argument.Names[i], argument);
+                    added.Add(argument.Names[i]);
                 }
             }
             catch (Exception)
@@ -792,7 +785,7 @@ namespace NCmd
             }
         }
 
-        public OptionSet Add(string header)
+        public ArgumentParser Add(string header)
         {
             if (header == null)
                 throw new ArgumentNullException(nameof(header));
@@ -801,73 +794,73 @@ namespace NCmd
         }
 
 
-        public new OptionSet Add(Option option)
+        public new ArgumentParser Add(Argument argument)
         {
-            base.Add(option);
+            base.Add(argument);
             return this;
         }
 
-        public OptionSet Add(string prototype, Action<string> action)
+        public ArgumentParser Add(string prototype, Action<string> action)
         {
             return Add(prototype, null, action);
         }
 
-        public OptionSet Add(string prototype, string description, Action<string> action)
+        public ArgumentParser Add(string prototype, string description, Action<string> action)
         {
             return Add(prototype, description, action, false);
         }
 
-        public OptionSet Add(string prototype, string description, Action<string> action, bool hidden)
+        public ArgumentParser Add(string prototype, string description, Action<string> action, bool hidden)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
-            Option p = new ActionOption(prototype, description, 1,
-                delegate(OptionValueCollection v) { action(v[0]); }, hidden);
+            Argument p = new ActionArgument(prototype, description, 1,
+                delegate(ArgumentValueCollection v) { action(v[0]); }, hidden);
             base.Add(p);
             return this;
         }
 
-        public OptionSet Add(string prototype, OptionAction<string, string> action)
+        public ArgumentParser Add(string prototype, ArgumentAction<string, string> action)
         {
             return Add(prototype, null, action);
         }
 
-        public OptionSet Add(string prototype, string description, OptionAction<string, string> action)
+        public ArgumentParser Add(string prototype, string description, ArgumentAction<string, string> action)
         {
             return Add(prototype, description, action, false);
         }
 
-        public OptionSet Add(string prototype, string description, OptionAction<string, string> action, bool hidden)
+        public ArgumentParser Add(string prototype, string description, ArgumentAction<string, string> action, bool hidden)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
-            Option p = new ActionOption(prototype, description, 2,
-                delegate(OptionValueCollection v) { action(v[0], v[1]); }, hidden);
+            Argument p = new ActionArgument(prototype, description, 2,
+                delegate(ArgumentValueCollection v) { action(v[0], v[1]); }, hidden);
             base.Add(p);
             return this;
         }
 
-        public OptionSet Add<T>(string prototype, Action<T> action)
+        public ArgumentParser Add<T>(string prototype, Action<T> action)
         {
             return Add(prototype, null, action);
         }
 
-        public OptionSet Add<T>(string prototype, string description, Action<T> action)
+        public ArgumentParser Add<T>(string prototype, string description, Action<T> action)
         {
-            return Add(new ActionOption<T>(prototype, description, action));
+            return Add(new ActionArgument<T>(prototype, description, action));
         }
 
-        public OptionSet Add<TKey, TValue>(string prototype, OptionAction<TKey, TValue> action)
+        public ArgumentParser Add<TKey, TValue>(string prototype, ArgumentAction<TKey, TValue> action)
         {
             return Add(prototype, null, action);
         }
 
-        public OptionSet Add<TKey, TValue>(string prototype, string description, OptionAction<TKey, TValue> action)
+        public ArgumentParser Add<TKey, TValue>(string prototype, string description, ArgumentAction<TKey, TValue> action)
         {
-            return Add(new ActionOption<TKey, TValue>(prototype, description, action));
+            return Add(new ActionArgument<TKey, TValue>(prototype, description, action));
         }
 
-        public OptionSet Add(ArgumentSource source)
+        public ArgumentParser Add(ArgumentSource source)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
@@ -875,24 +868,24 @@ namespace NCmd
             return this;
         }
 
-        protected virtual OptionContext CreateOptionContext()
+        protected virtual ArgumentContext CreateArgumentContext()
         {
-            return new OptionContext(this);
+            return new ArgumentContext(this);
         }
 
         public List<string> Parse(IEnumerable<string> arguments)
         {
             if (arguments == null)
                 throw new ArgumentNullException(nameof(arguments));
-            var c = CreateOptionContext();
-            c.OptionIndex = -1;
+            var c = CreateArgumentContext();
+            c.ArgumentIndex = -1;
             var process = true;
             var unprocessed = new List<string>();
             var def = Contains("<>") ? this["<>"] : null;
             var ae = new ArgumentEnumerator(arguments);
             foreach (var argument in ae)
             {
-                ++c.OptionIndex;
+                ++c.ArgumentIndex;
                 if (argument == "--")
                 {
                     process = false;
@@ -908,7 +901,7 @@ namespace NCmd
                 if (!Parse(argument, c))
                     Unprocessed(unprocessed, def, c, argument);
             }
-            c.Option?.Invoke(c);
+            c.Argument?.Invoke(c);
             return unprocessed;
         }
 
@@ -925,26 +918,26 @@ namespace NCmd
             return false;
         }
 
-        private static void Unprocessed(ICollection<string> extra, Option def, OptionContext c, string argument)
+        private static void Unprocessed(ICollection<string> extra, Argument def, ArgumentContext c, string argument)
         {
             if (def == null)
             {
                 extra.Add(argument);
                 return;
             }
-            c.OptionValues.Add(argument);
-            c.Option = def;
-            c.Option.Invoke(c);
+            c.ArgumentValues.Add(argument);
+            c.Argument = def;
+            c.Argument.Invoke(c);
         }
 
-        protected bool GetOptionParts(string argument, out string flag, out string name, out string sep,
+        protected bool GetArgumentParts(string argument, out string flag, out string name, out string sep,
             out string value)
         {
             if (argument == null)
                 throw new ArgumentNullException(nameof(argument));
 
             flag = name = sep = value = null;
-            var m = _valueOption.Match(argument);
+            var m = _valueArgument.Match(argument);
             if (!m.Success)
             {
                 return false;
@@ -957,30 +950,30 @@ namespace NCmd
             return true;
         }
 
-        protected virtual bool Parse(string argument, OptionContext c)
+        protected virtual bool Parse(string argument, ArgumentContext c)
         {
-            if (c.Option != null)
+            if (c.Argument != null)
             {
                 ParseValue(argument, c);
                 return true;
             }
 
             string f, n, s, v;
-            if (!GetOptionParts(argument, out f, out n, out s, out v))
+            if (!GetArgumentParts(argument, out f, out n, out s, out v))
                 return false;
 
             if (!Contains(n)) return ParseBool(argument, n, c) || ParseBundledValue(f, $"{n}{s}{v}", c);
             var p = this[n];
-            c.OptionName = f + n;
-            c.Option = p;
-            switch (p.OptionValueType)
+            c.ArgumentName = f + n;
+            c.Argument = p;
+            switch (p.ArgumentValueType)
             {
-                case OptionValueType.None:
-                    c.OptionValues.Add(n);
-                    c.Option.Invoke(c);
+                case ArgumentValueType.None:
+                    c.ArgumentValues.Add(n);
+                    c.Argument.Invoke(c);
                     break;
-                case OptionValueType.Optional:
-                case OptionValueType.Required:
+                case ArgumentValueType.Optional:
+                case ArgumentValueType.Required:
                     ParseValue(v, c);
                     break;
                 default:
@@ -989,37 +982,37 @@ namespace NCmd
             return true;
         }
 
-        private void ParseValue(string option, OptionContext c)
+        private void ParseValue(string argument, ArgumentContext c)
         {
-            if (option != null)
-                foreach (var o in c.Option.ValueSeparators != null ? option.Split(c.Option.ValueSeparators, c.Option.MaxValueCount - c.OptionValues.Count, StringSplitOptions.None) : new[] {option})
+            if (argument != null)
+                foreach (var o in c.Argument.ValueSeparators != null ? argument.Split(c.Argument.ValueSeparators, c.Argument.MaxValueCount - c.ArgumentValues.Count, StringSplitOptions.None) : new[] {argument})
                 {
-                    c.OptionValues.Add(o);
+                    c.ArgumentValues.Add(o);
                 }
-            if (c.OptionValues.Count == c.Option.MaxValueCount || c.Option.OptionValueType == OptionValueType.Optional)
-                c.Option.Invoke(c);
-            else if (c.OptionValues.Count > c.Option.MaxValueCount)
+            if (c.ArgumentValues.Count == c.Argument.MaxValueCount || c.Argument.ArgumentValueType == ArgumentValueType.Optional)
+                c.Argument.Invoke(c);
+            else if (c.ArgumentValues.Count > c.Argument.MaxValueCount)
             {
-                throw new OptionException(MessageLocalizer(
-                    $"Error: Found {c.OptionValues.Count} option values when expecting {c.Option.MaxValueCount}."), c.OptionName);
+                throw new ArgParseException(MessageLocalizer(
+                    $"Error: Found {c.ArgumentValues.Count} argument values when expecting {c.Argument.MaxValueCount}."), c.ArgumentName);
             }
         }
 
-        private bool ParseBool(string option, string n, OptionContext c)
+        private bool ParseBool(string argument, string n, ArgumentContext c)
         {
             string rn;
             if (n.Length < 1 || (n[n.Length - 1] != '+' && n[n.Length - 1] != '-') ||
                 !Contains(rn = n.Substring(0, n.Length - 1))) return false;
             var p = this[rn];
-            var v = n[n.Length - 1] == '+' ? option : null;
-            c.OptionName = option;
-            c.Option = p;
-            c.OptionValues.Add(v);
+            var v = n[n.Length - 1] == '+' ? argument : null;
+            c.ArgumentName = argument;
+            c.Argument = p;
+            c.ArgumentValues.Add(v);
             p.Invoke(c);
             return true;
         }
 
-        private bool ParseBundledValue(string f, string n, OptionContext c)
+        private bool ParseBundledValue(string f, string n, ArgumentContext c)
         {
             if (f != "-")
                 return false;
@@ -1031,39 +1024,39 @@ namespace NCmd
                 {
                     if (i == 0)
                         return false;
-                    throw new OptionException(string.Format(MessageLocalizer("Cannot use unregistered option '{0}' in bundle '{1}'."), rn, f + n), null);
+                    throw new ArgParseException(string.Format(MessageLocalizer("Cannot use unregistered Argument '{0}' in bundle '{1}'."), rn, f + n), null);
                 }
                 var p = this[rn];
-                switch (p.OptionValueType)
+                switch (p.ArgumentValueType)
                 {
-                    case OptionValueType.None:
+                    case ArgumentValueType.None:
                         Invoke(c, opt, n, p);
                         break;
-                    case OptionValueType.Optional:
-                    case OptionValueType.Required:
+                    case ArgumentValueType.Optional:
+                    case ArgumentValueType.Required:
                     {
                         var v = n.Substring(i + 1);
-                        c.Option = p;
-                        c.OptionName = opt;
+                        c.Argument = p;
+                        c.ArgumentName = opt;
                         ParseValue(v.Length != 0 ? v : null, c);
                         return true;
                     }
                     default:
-                        throw new InvalidOperationException("Unknown OptionValueType: " + p.OptionValueType);
+                        throw new InvalidOperationException("Unknown ArgumentValueType: " + p.ArgumentValueType);
                 }
             }
             return true;
         }
 
-        private static void Invoke(OptionContext c, string name, string value, Option option)
+        private static void Invoke(ArgumentContext c, string name, string value, Argument argument)
         {
-            c.OptionName = name;
-            c.Option = option;
-            c.OptionValues.Add(value);
-            option.Invoke(c);
+            c.ArgumentName = name;
+            c.Argument = argument;
+            c.ArgumentValues.Add(value);
+            argument.Invoke(c);
         }
 
-        public void WriteOptionDescriptions(TextWriter o)
+        public void WriteArgumentDescriptions(TextWriter o)
         {
             foreach (var p in this)
             {
@@ -1079,18 +1072,18 @@ namespace NCmd
                     continue;
                 }
 
-                if (!WriteOptionPrototype(o, p, ref written))
+                if (!WriteArgumentPrototype(o, p, ref written))
                     continue;
 
-                if (written < OptionWidth)
-                    o.Write(new string(' ', OptionWidth - written));
+                if (written < ArgumentWidth)
+                    o.Write(new string(' ', ArgumentWidth - written));
                 else
                 {
                     o.WriteLine();
-                    o.Write(new string(' ', OptionWidth));
+                    o.Write(new string(' ', ArgumentWidth));
                 }
 
-                WriteDescription(o, p.Description, new string(' ', OptionWidth + 2), DescriptionFirstWidth, DescriptionRemWidth);
+                WriteDescription(o, p.Description, new string(' ', ArgumentWidth + 2), DescriptionFirstWidth, DescriptionRemWidth);
             }
 
             foreach (var s in _sources)
@@ -1109,15 +1102,15 @@ namespace NCmd
                     Write(o, ref written, names[i]);
                 }
 
-                if (written < OptionWidth)
-                    o.Write(new string(' ', OptionWidth - written));
+                if (written < ArgumentWidth)
+                    o.Write(new string(' ', ArgumentWidth - written));
                 else
                 {
                     o.WriteLine();
-                    o.Write(new string(' ', OptionWidth));
+                    o.Write(new string(' ', ArgumentWidth));
                 }
 
-                WriteDescription(o, s.Description, new string(' ', OptionWidth + 2), DescriptionFirstWidth, DescriptionRemWidth);
+                WriteDescription(o, s.Description, new string(' ', ArgumentWidth + 2), DescriptionFirstWidth, DescriptionRemWidth);
             }
         }
 
@@ -1133,11 +1126,11 @@ namespace NCmd
             }
         }
 
-        private bool WriteOptionPrototype(TextWriter o, Option p, ref int written)
+        private bool WriteArgumentPrototype(TextWriter o, Argument p, ref int written)
         {
             var names = p.Names;
 
-            var i = GetNextOptionIndex(names, 0);
+            var i = GetNextArgumentIndex(names, 0);
             if (i == names.Length)
                 return false;
 
@@ -1152,16 +1145,16 @@ namespace NCmd
                 Write(o, ref written, names[0]);
             }
 
-            for (i = GetNextOptionIndex(names, i + 1); i < names.Length; i = GetNextOptionIndex(names, i + 1))
+            for (i = GetNextArgumentIndex(names, i + 1); i < names.Length; i = GetNextArgumentIndex(names, i + 1))
             {
                 Write(o, ref written, ", ");
                 Write(o, ref written, names[i].Length == 1 ? "-" : "--");
                 Write(o, ref written, names[i]);
             }
 
-            if (p.OptionValueType == OptionValueType.Optional || p.OptionValueType == OptionValueType.Required)
+            if (p.ArgumentValueType == ArgumentValueType.Optional || p.ArgumentValueType == ArgumentValueType.Required)
             {
-                if (p.OptionValueType == OptionValueType.Optional)
+                if (p.ArgumentValueType == ArgumentValueType.Optional)
                 {
                     Write(o, ref written, MessageLocalizer("["));
                 }
@@ -1171,7 +1164,7 @@ namespace NCmd
                 {
                     Write(o, ref written, MessageLocalizer(sep + GetArgumentName(c, p.MaxValueCount, p.Description)));
                 }
-                if (p.OptionValueType == OptionValueType.Optional)
+                if (p.ArgumentValueType == ArgumentValueType.Optional)
                 {
                     Write(o, ref written, MessageLocalizer("]"));
                 }
@@ -1179,7 +1172,7 @@ namespace NCmd
             return true;
         }
 
-        private static int GetNextOptionIndex(string[] names, int i)
+        private static int GetNextArgumentIndex(string[] names, int i)
         {
             while (i < names.Length && names[i] == "<>")
             {
@@ -1239,7 +1232,7 @@ namespace NCmd
                         if (start < 0)
                         {
                             if (i + 1 == description.Length || description[i + 1] != '}')
-                                throw new InvalidOperationException("Invalid option description: " + description);
+                                throw new InvalidOperationException("Invalid Argument description: " + description);
                             ++i;
                             sb.Append("}");
                         }
@@ -1265,73 +1258,73 @@ namespace NCmd
 
         private static IEnumerable<string> GetLines(string description, int firstWidth, int remWidth)
         {
-            return StringFunx.WrappedLines(description, firstWidth, remWidth);
+            return StringUtilityFunctions.WrappedLines(description, firstWidth, remWidth);
         }
 
-        internal sealed class Category : Option
+        internal sealed class Category : Argument
         {
             public Category(string description) : base("=:Category:= " + description, description)
             {
             }
 
-            protected override void OnParseComplete(OptionContext c)
+            protected override void OnParseComplete(ArgumentContext c)
             {
                 throw new NotSupportedException("Category.OnParseComplete should not be invoked.");
             }
         }
 
-        private sealed class ActionOption : Option
+        private sealed class ActionArgument : Argument
         {
-            private readonly Action<OptionValueCollection> _action;
+            private readonly Action<ArgumentValueCollection> _action;
 
-            public ActionOption(string prototype, string description, int count, Action<OptionValueCollection> action) : this(prototype, description, count, action, false)
+            public ActionArgument(string prototype, string description, int count, Action<ArgumentValueCollection> action) : this(prototype, description, count, action, false)
             {
             }
 
-            public ActionOption(string prototype, string description, int count, Action<OptionValueCollection> action, bool hidden) : base(prototype, description, count, hidden)
+            public ActionArgument(string prototype, string description, int count, Action<ArgumentValueCollection> action, bool hidden) : base(prototype, description, count, hidden)
             {
                 if (action == null)
                     throw new ArgumentNullException(nameof(action));
                 _action = action;
             }
 
-            protected override void OnParseComplete(OptionContext c)
+            protected override void OnParseComplete(ArgumentContext c)
             {
-                _action(c.OptionValues);
+                _action(c.ArgumentValues);
             }
         }
 
-        private sealed class ActionOption<T> : Option
+        private sealed class ActionArgument<T> : Argument
         {
             private readonly Action<T> _action;
 
-            public ActionOption(string prototype, string description, Action<T> action) : base(prototype, description, 1)
+            public ActionArgument(string prototype, string description, Action<T> action) : base(prototype, description, 1)
             {
                 if (action == null)
                     throw new ArgumentNullException(nameof(action));
                 _action = action;
             }
 
-            protected override void OnParseComplete(OptionContext c)
+            protected override void OnParseComplete(ArgumentContext c)
             {
-                _action(Parse<T>(c.OptionValues[0], c));
+                _action(Parse<T>(c.ArgumentValues[0], c));
             }
         }
 
-        private sealed class ActionOption<TKey, TValue> : Option
+        private sealed class ActionArgument<TKey, TValue> : Argument
         {
-            private readonly OptionAction<TKey, TValue> _action;
+            private readonly ArgumentAction<TKey, TValue> _action;
 
-            public ActionOption(string prototype, string description, OptionAction<TKey, TValue> action) : base(prototype, description, 2)
+            public ActionArgument(string prototype, string description, ArgumentAction<TKey, TValue> action) : base(prototype, description, 2)
             {
                 if (action == null)
                     throw new ArgumentNullException(nameof(action));
                 _action = action;
             }
 
-            protected override void OnParseComplete(OptionContext c)
+            protected override void OnParseComplete(ArgumentContext c)
             {
-                _action(Parse<TKey>(c.OptionValues[0], c), Parse<TValue>(c.OptionValues[1], c));
+                _action(Parse<TKey>(c.ArgumentValues[0], c), Parse<TValue>(c.ArgumentValues[1], c));
             }
         }
 

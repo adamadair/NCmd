@@ -31,7 +31,7 @@ namespace NCmdDemo
         }
 
         /// <summary>
-        /// Do_time demonstrates 
+        /// Do_time demonstrates using naming convention to create a command.
         /// </summary>
         /// <param name="arg"></param>
         public void Do_time(string arg)
@@ -100,7 +100,7 @@ namespace NCmdDemo
         /// <summary>
         /// EmptyLine can be overriden to handle case where the user has entered 
         /// a blank line. The default case is to do nothing. In this case we 
-        /// provide the user with some assistance. Another useful option would be 
+        /// provide the user with some assistance. Another useful Argument would be 
         /// to repeat the last command.
         /// </summary>
         public override void EmptyLine()

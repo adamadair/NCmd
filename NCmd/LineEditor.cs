@@ -159,10 +159,6 @@ namespace NCmd
                 Handler.Alt ('D', ConsoleKey.D, CmdDeleteWord),
                 Handler.Alt ((char) 8, ConsoleKey.Backspace, CmdDeleteBackword),
 				
-				// DEBUG
-				//Handler.Control ('T', CmdDebug),
-
-				// quote
 				Handler.Control ('Q', delegate { HandleChar (C.ReadKey (true).KeyChar); })
             };
 
@@ -292,7 +288,7 @@ namespace NCmd
             ForceCursor(newpos);
         }
 
-        void InsertChar(char c)
+        private void InsertChar(char c)
         {
             var prevLines = LineCount;
             _text = _text.Insert(_cursor, c);
@@ -314,7 +310,7 @@ namespace NCmd
         //
         // Commands
         //
-        void CmdDone()
+        private void CmdDone()
         {
             _done = true;
         }
@@ -329,13 +325,11 @@ namespace NCmd
                     complete = true;
                 else
                 {
-                    for (int i = 0; i < _cursor; i++)
+                    for (var i = 0; i < _cursor; i++)
                     {
-                        if (!char.IsWhiteSpace(_text[i]))
-                        {
-                            complete = true;
-                            break;
-                        }
+                        if (char.IsWhiteSpace(_text[i])) continue;
+                        complete = true;
+                        break;
                     }
                 }
 
@@ -396,7 +390,7 @@ namespace NCmd
                     HandleChar('\t');
             }
             else
-                HandleChar('t');
+                HandleChar('\t');
         }
 
         private void CmdHome()
@@ -409,7 +403,7 @@ namespace NCmd
             UpdateCursor(_text.Length);
         }
 
-        void CmdLeft()
+        private void CmdLeft()
         {
             if (_cursor == 0)
                 return;
@@ -417,23 +411,23 @@ namespace NCmd
             UpdateCursor(_cursor - 1);
         }
 
-        void CmdBackwardWord()
+        private void CmdBackwardWord()
         {
-            int p = WordBackward(_cursor);
+            var p = WordBackward(_cursor);
             if (p == -1)
                 return;
             UpdateCursor(p);
         }
 
-        void CmdForwardWord()
+        private void CmdForwardWord()
         {
-            int p = WordForward(_cursor);
+            var p = WordForward(_cursor);
             if (p == -1)
                 return;
             UpdateCursor(p);
         }
 
-        void CmdRight()
+        private void CmdRight()
         {
             if (_cursor == _text.Length)
                 return;
@@ -441,14 +435,14 @@ namespace NCmd
             UpdateCursor(_cursor + 1);
         }
 
-        void RenderAfter(int p)
+        private void RenderAfter(int p)
         {
             ForceCursor(p);
             RenderFrom(p);
             ForceCursor(_cursor);
         }
 
-        void CmdBackspace()
+        private void CmdBackspace()
         {
             if (_cursor == 0)
                 return;
@@ -458,7 +452,7 @@ namespace NCmd
             RenderAfter(_cursor);
         }
 
-        void CmdDeleteChar()
+        private void CmdDeleteChar()
         {
             // If there is no input, this behaves like EOF
             if (_text.Length == 0)
@@ -476,7 +470,7 @@ namespace NCmd
             RenderAfter(_cursor);
         }
 
-        int WordForward(int p)
+        private int WordForward(int p)
         {
             if (p >= _text.Length)
                 return -1;
@@ -546,14 +540,14 @@ namespace NCmd
             return -1;
         }
 
-        void CmdDeleteWord()
+        private void CmdDeleteWord()
         {
-            int pos = WordForward(_cursor);
+            var pos = WordForward(_cursor);
 
             if (pos == -1)
                 return;
 
-            string k = _text.ToString(_cursor, pos - _cursor);
+            var k = _text.ToString(_cursor, pos - _cursor);
 
             if (_lastHandler == CmdDeleteWord)
                 _killBuffer = _killBuffer + k;
@@ -565,9 +559,9 @@ namespace NCmd
             RenderAfter(_cursor);
         }
 
-        void CmdDeleteBackword()
+        private void CmdDeleteBackword()
         {
-            int pos = WordBackward(_cursor);
+            var pos = WordBackward(_cursor);
             if (pos == -1)
                 return;
 
