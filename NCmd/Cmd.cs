@@ -254,7 +254,7 @@ namespace NCmd
         private static void DisplayExceptionDetails(Exception ex)
         {
             C.Wl("\n**********\nERROR!: " + ex.Message + "\n**********\n");
-            if (C.PromptUser("stacktrace?:").ToUpper().StartsWith("Y"))
+            if (C.PromptUser ("stacktrace?:").ToUpper ().StartsWith ("Y", StringComparison.Ordinal))
             {
                 C.Wl(ex.StackTrace);
             }

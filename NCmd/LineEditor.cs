@@ -168,6 +168,16 @@ namespace NCmd
             _history = new History(name, histsize);
         }
 
+        private int WindowWidth {
+            get {
+                // Since Mono doesn't support the Console.WindowWidth attribute
+                // default to 80, it seems to work ok for most purposes.
+                if (Console.WindowWidth == 0)
+                    return 80;
+                return Console.WindowWidth;
+            }
+        }
+
         private void Render()
         {
             SimpleConsole.W(_shownPrompt);
@@ -188,7 +198,7 @@ namespace NCmd
 
         private void UpdateHomeRow(int screenpos)
         {
-            var lines = 1 + (screenpos / C.WindowWidth);
+            var lines = 1 + (screenpos / WindowWidth);
 
             _homeRow = C.CursorTop - (lines - 1);
             if (_homeRow < 0)
@@ -265,15 +275,15 @@ namespace NCmd
 
         private string Prompt { get; set; }
 
-        private int LineCount => (_shownPrompt.Length + _renderedText.Length) / C.WindowWidth;
+        private int LineCount => (_shownPrompt.Length + _renderedText.Length) / WindowWidth;
 
         private void ForceCursor(int newpos)
         {
             _cursor = newpos;
 
             var actualPos = _shownPrompt.Length + TextToRenderPos(_cursor);
-            var row = _homeRow + (actualPos / C.WindowWidth);
-            var col = actualPos % C.WindowWidth;
+            var row = _homeRow + (actualPos / WindowWidth);
+            var col = actualPos % WindowWidth;
 
             if (row >= C.BufferHeight)
                 row = C.BufferHeight - 1;
