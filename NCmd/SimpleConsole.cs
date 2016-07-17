@@ -68,10 +68,6 @@ namespace NCmd
             sb.Append(" ");
             sb.Append(p.Version);
             sb.Append(Environment.NewLine);
-            if (p.Authors != null && p.Authors.Length > 0)
-            {
-                sb.Append(GetAuthorStatement(p.Authors));
-            }
             sb.Append(Environment.NewLine);
             sb.Append(Environment.NewLine);
             sb.Append(p.LicenseStatement);

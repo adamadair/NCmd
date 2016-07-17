@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Security;
 using System.Text;
@@ -519,6 +521,47 @@ namespace NCmd
             }
             sb.Append("\n");
             Console.WriteLine(sb.ToString());
+        }
+
+        #endregion
+
+        #region Usage and Version Statement Convenience methods
+
+        
+        /// <summary>
+        /// This is a convenience methods for writing the usage statement of a command
+        /// line program. It will write the Usage statment with list of optional parameters
+        /// followed by a list of descriptions for the parameters. 
+        /// </summary>
+        /// <param name="programData">The program meta data</param>
+        /// <param name="parser"></param>
+        /// <param name="writer"></param>
+        public static void WriteUsageStatement(IProgramMetaData programData, ArgumentParser parser, TextWriter writer)
+        {
+            writer.WriteLine($"Program: {programData.Title} v{programData.Version}");
+            if (!string.IsNullOrEmpty(programData.Description))
+            {
+                writer.WriteLine($"\n{programData.Description}");
+            }
+
+            if (parser != null)
+            {
+                writer.WriteLine("\nOptional Arguments:");
+                parser.WriteArgumentDescriptions(writer);
+            }            
+        }
+
+        public static void WriteVersionStatement(IProgramMetaData programData, TextWriter writer)
+        {
+            writer.WriteLine($"{programData.Title} v{programData.Version}");
+            if (programData.BuildDateTime != null)
+            {
+                writer.WriteLine("Build Time: " + programData.BuildDateTime.Value.ToString(CultureInfo.CurrentCulture));
+            }
+            if (!string.IsNullOrEmpty(programData.LicenseStatement))
+            {
+                writer.WriteLine($"\n{programData.LicenseStatement}");
+            }            
         }
 
         #endregion
