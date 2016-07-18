@@ -1,100 +1,41 @@
-﻿// ArgParse.cs - makes it easy to write user-friendly command-line interfaces.
-//
-// Argument format strings:
-//  Regex-like BNF Grammar: 
-//    name: .+
-//    type: [=:]
-//    sep: ( [^{}]+ | '{' .+ '}' )?
-//    aliases: ( name type sep ) ( '|' name type sep )*
-// 
-// Each '|'-delimited name is an alias for the associated action.  If the
-// format string ends in a '=', it has a required value.  If the format
-// string ends in a ':', it has an optional value.  If neither '=' or ':'
-// is present, no value is supported.  `=' or `:' need only be defined on one
-// alias, but if they are provided on more than one they must be consistent.
-//
-// Each alias portion may also end with a "key/value separator", which is used
-// to split Argument values if the Argument accepts > 1 value.  If not specified,
-// it defaults to '=' and ':'.  If specified, it can be any character except
-// '{' and '}' OR the *string* between '{' and '}'.  If no separator should be
-// used (i.e. the separate values should be distinct arguments), then "{}"
-// should be used as the separator.
-//
-// Options are extracted either from the current Argument by looking for
-// the Argument name followed by an '=' or ':', or is taken from the
-// following Argument IFF:
-//  - The current Argument does not contain a '=' or a ':'
-//  - The current Argument requires a value (i.e. not a Argument type of ':')
-//
-// The `name' used in the Argument format string does NOT include any leading
-// Argument indicator, such as '-', '--', or '/'.  All three of these are
-// permitted/required on any named Argument.
-//
-// Argument bundling is permitted so long as:
-//   - '-' is used to start the Argument group
-//   - all of the bundled options are a single character
-//   - at most one of the bundled options accepts a value, and the value
-//     provided starts from the next character to the end of the string.
-//
-// This allows specifying '-a -b -c' as '-abc', and specifying '-D name=value'
-// as '-Dname=value'.
-//
-// Argument processing is disabled by specifying "--".  All options after "--"
-// are returned by ArgumentParser.Parse() unchanged and unprocessed.
-//
-// Unprocessed options are returned from ArgumentParser.Parse().
-//
-// Examples:
-//  int verbose = 0;
-//  ArgumentParser p = new ArgumentParser ()
-//    .Add ("v", v => ++verbose)
-//    .Add ("name=|value=", v => Console.WriteLine (v));
-//  p.Parse (new string[]{"-v", "--v", "/v", "-name=A", "/name", "B", "extra"});
-//
-// The above would parse the argument string array, and would invoke the
-// lambda expression three times, setting `verbose' to 3 when complete.  
-// It would also print out "A" and "B" to standard output.
-// The returned array would contain the string "extra".
-//
-// C# 3.0 collection initializers are supported and encouraged:
-//  var p = new ArgumentParser () {
-//    { "h|?|help", v => ShowHelp () },
-//  };
-//
-// System.ComponentModel.TypeConverter is also supported, allowing the use of
-// custom data types in the callback type; TypeConverter.ConvertFromString()
-// is used to convert the value Argument to an instance of the specified
-// type:
-//
-//  var p = new ArgumentParser () {
-//    { "foo=", (Foo f) => Console.WriteLine (f.ToString ()) },
-//  };
-//
-// Random other tidbits:
-//  - Boolean options (those w/o '=' or ':' in the Argument format string)
-//    are explicitly enabled if they are followed with '+', and explicitly
-//    disabled if they are followed with '-':
-//      string a = null;
-//      var p = new ArgumentParser () {
-//        { "a", s => a = s },
-//      };
-//      p.Parse (new string[]{"-a"});   // sets a != null
-//      p.Parse (new string[]{"-a+"});  // sets a != null
-//      p.Parse (new string[]{"-a-"});  // sets a == null
-//
-
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.IO;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Text.RegularExpressions;
+﻿/*
+ * NCmd
+ *
+ * Copyright (c) Adam Adair 2016
+ * All rights reserved.
+ *
+ * MIT License
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this
+ * software and associated documentation files (the "Software"), to deal in the Software
+ * without restriction, including without limitation the rights to use, copy, modify, merge,
+ * publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons
+ * to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+ * FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
 
 namespace NCmd
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.ComponentModel;
+    using System.IO;
+    using System.Runtime.Serialization;
+    using System.Text;
+    using System.Text.RegularExpressions;
+
+
     internal static class StringUtilityFunctions
     {
         public static IEnumerable<string> WrappedLines(string self, params int[] widths)
