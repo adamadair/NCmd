@@ -67,6 +67,12 @@ namespace NCmdDemo
             }
         }
 
+        [CmdCommand(Command = "version", Description = "Show version information")]
+        public void ShowVersion(string arg)
+        {
+            WriteVersionStatement(new AutoProgramMetaData(GetType().Assembly), Console.Out);            
+        }
+
         public DemoShell()
         {
             // Intro is the text that gets displayed when the shell starts. 

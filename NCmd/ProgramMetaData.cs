@@ -91,7 +91,7 @@ namespace NCmd
             return string.Format(DefaultLicenseStatement, GetCopyright());
         }
 
-        private DateTime GetLinkerTime(TimeZoneInfo target = null)
+        private DateTime? GetLinkerTime(TimeZoneInfo target = null)
         {
             var filePath = assembly.Location;
             const int cPeHeaderOffset = 60;
@@ -104,6 +104,7 @@ namespace NCmd
 
             var offset = BitConverter.ToInt32(buffer, cPeHeaderOffset);
             var secondsSince1970 = BitConverter.ToInt32(buffer, offset + cLinkerTimestampOffset);
+            if (secondsSince1970 == 0) return null;
             var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
             var linkTimeUtc = epoch.AddSeconds(secondsSince1970);
