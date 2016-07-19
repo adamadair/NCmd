@@ -1,6 +1,13 @@
 # NCmd
 Provides a simple framework for writing line-oriented command interpreters in C#. Inspired by the Python cmd library.
 
+## Features
+- Provides the Cmd class to quickly create command line shell program.
+- Shell commands can be created using method naming conventions or method arguments.
+- A command line argument parser.
+- Live help
+- Auto command completion
+
 ## Prerequisites
 - A C# compiler to build the files. I used Visual Studio 2015.
 - A version of the .NET Framework or Mono, starting with 4.5
