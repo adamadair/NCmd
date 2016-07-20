@@ -23,6 +23,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+using System.Linq;
+
 namespace NCmd
 {
     using System;
@@ -50,9 +52,16 @@ namespace NCmd
 
         private Dictionary<string, ICommand> _commands;
 
+        /// <summary>
+        /// If true will turn on autocomplete when the command loop is started. True by default,
+        /// so you must explicitly turn it off before starting to loop.
+        /// </summary>
+        public bool DoAutoComplete { get; set; }
+
         protected Cmd()
         {
             _isInLoop = false;
+            DoAutoComplete = true;
         }
 
         /// <summary>
@@ -182,6 +191,11 @@ namespace NCmd
 
             PreLoop();
             var editor = new LineEditor(HistoryFileName);
+            if (DoAutoComplete)
+            {
+                var list = new List<string>(_commands.Keys);
+                editor.SetAutoCompleteCommandList(list);
+            }
             IsExiting = false; // We should reset the exit condition priort to entering.
             while (!IsExiting)
             {

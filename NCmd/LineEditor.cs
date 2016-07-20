@@ -23,6 +23,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
+
 namespace NCmd
 {
     using System;
@@ -30,6 +33,8 @@ namespace NCmd
     using System.Text;
     using System.Threading;
     using C = System.Console;
+    using System.Collections.Generic;
+    using System.Linq;
 
     /// <summary>
     /// LineEditor provides the user interface to the Cmd command shell. It is not
@@ -37,20 +42,7 @@ namespace NCmd
     /// </summary>
     internal class LineEditor
     {
-        public class Completion
-        {
-            public string[] Result;
-            public string Prefix;
-
-            public Completion(string prefix, string[] result)
-            {
-                Prefix = prefix;
-                Result = result;
-            }
-        }
-
-        public delegate Completion AutoCompleteHandler(string text, int pos);        
-
+                
         // The text being edited.
         private StringBuilder _text;
 
@@ -146,6 +138,21 @@ namespace NCmd
         ///    text
         /// </remarks>
         public AutoCompleteHandler AutoCompleteEvent;
+
+        private List<string> _commands;
+
+        public void SetAutoCompleteCommandList(List<string> commands)
+        {
+            _commands = commands;
+            AutoCompleteEvent = AutoCompleteMe;
+        }
+
+        private Completion AutoCompleteMe(string text, int pos)
+        {
+            var prefix = text;
+            var completion = new Completion(prefix, _commands.Where(s => s.StartsWith(prefix)).Select(c => c.Replace(prefix, "")).ToArray());
+            return completion;
+        }
 
         private static Handler[] _handlers;
 
@@ -1111,4 +1118,19 @@ namespace NCmd
             }
         }
     }
+
+    internal class Completion
+    {
+        public string[] Result;
+        public string Prefix;
+
+        public Completion(string prefix, string[] result)
+        {
+            Prefix = prefix;
+            Result = result;
+        }
+    }
+
+    internal delegate Completion AutoCompleteHandler(string text, int pos);
+    
 }
