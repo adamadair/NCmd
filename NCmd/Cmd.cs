@@ -23,8 +23,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-using System.Linq;
-
 namespace NCmd
 {
     using System;
