@@ -58,17 +58,19 @@ namespace NCmd
 
         protected Cmd()
         {
+            Intro = "";
+
             _isInLoop = false;
             DoAutoComplete = true;
         }
 
         /// <summary>
-        /// Command prompr is the character sequence that is displayed to the user to prompt
+        /// Command prompt is the character sequence that is displayed to the user to prompt
         /// them for input. Common characters to use for this purpose are '>' and '$'. Newline
         /// characters should be avoid as this will cause problems for some of the other
         /// features of the input editor.
         /// </summary>
-        public virtual string CommandPrompt { get; set; }
+        public virtual string CommandPrompt { get; set; } = "> ";
 
         /// <summary>
         /// The string that gets printed first once CmdLoop is called. This string only gets
@@ -184,7 +186,7 @@ namespace NCmd
             if (!_isInitialized)
                 InitCommandDictionary();
 
-            if (Intro.Length > 0)
+            if (!string.IsNullOrWhiteSpace(Intro) && Intro.Length > 0)
                 C.Wl(Intro);
 
             PreLoop();
@@ -294,7 +296,7 @@ namespace NCmd
         private static void DisplayExceptionDetails(Exception ex)
         {
             C.Wl("\n**********\nERROR!: " + ex.Message + "\n**********\n");
-            if (C.PromptUser ("stacktrace?:").ToUpper ().StartsWith ("Y", StringComparison.Ordinal))
+            if (C.PromptUser("stacktrace?:").ToUpper().StartsWith("Y", StringComparison.Ordinal))
             {
                 C.Wl(ex.StackTrace);
             }
@@ -324,7 +326,7 @@ namespace NCmd
                     if (!(attr is CmdCommandAttribute)) continue;
                     //This method is a command. 
                     isCommand = true;
-                    var a = (CmdCommandAttribute) attr;
+                    var a = (CmdCommandAttribute)attr;
                     var cmd = a.Command;
                     if (string.IsNullOrWhiteSpace(cmd))
                     {
@@ -430,7 +432,7 @@ namespace NCmd
             Console.WriteLine(ln, p);
         }
 
-        public void WriteLine() { Console.WriteLine();}
+        public void WriteLine() { Console.WriteLine(); }
 
         public void Write(string ln)
         {
@@ -452,7 +454,7 @@ namespace NCmd
                 foreach (var attr in p.GetCustomAttributes())
                 {
                     if (!(attr is CmdCommandHelpAttribute)) continue;
-                    var a = (CmdCommandHelpAttribute) attr;
+                    var a = (CmdCommandHelpAttribute)attr;
                     if (!_commands.ContainsKey(a.Command)) continue;
                     _commands[a.Command].HelpText = p.GetValue(this).ToString();
                     isFound = true;
@@ -472,7 +474,7 @@ namespace NCmd
                 foreach (var attr in p.GetCustomAttributes())
                 {
                     if (!(attr is CmdCommandHelpAttribute)) continue;
-                    var a = (CmdCommandHelpAttribute) attr;
+                    var a = (CmdCommandHelpAttribute)attr;
                     if (_commands.ContainsKey(a.Command))
                     {
                         _commands[a.Command].HelpText = p.GetValue(this, null).ToString();
@@ -565,7 +567,7 @@ namespace NCmd
 
         #region Usage and Version Statement Convenience methods
 
-        
+
         /// <summary>
         /// This is a convenience methods for writing the usage statement of a command
         /// line program. It will write the Usage statment with list of optional parameters
@@ -586,7 +588,7 @@ namespace NCmd
             {
                 writer.WriteLine("\nOptional Arguments:");
                 parser.WriteArgumentDescriptions(writer);
-            }            
+            }
         }
 
         public static void WriteVersionStatement(IProgramMetaData programData, TextWriter writer)
@@ -599,7 +601,7 @@ namespace NCmd
             if (!string.IsNullOrEmpty(programData.LicenseStatement))
             {
                 writer.WriteLine($"\n{programData.LicenseStatement}");
-            }            
+            }
         }
 
         #endregion
