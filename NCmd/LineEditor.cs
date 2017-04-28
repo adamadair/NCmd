@@ -399,7 +399,7 @@ namespace NCmd
 
                             for (var i = 1; i < ncompletions; i++)
                             {
-                                if (completions[i].Length < p)
+                                if ((completions[i].Length - 1) < p)
                                     goto mismatch;
 
                                 if (completions[i][p] != c)
@@ -691,7 +691,6 @@ namespace NCmd
             if (_cursor == _text.Length)
             {
                 // The cursor is at the end of the string
-
                 p = _text.ToString().LastIndexOf(_search, StringComparison.Ordinal);
                 if (p != -1)
                 {
