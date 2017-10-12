@@ -7,10 +7,11 @@ Provides a simple framework for writing line-oriented command interpreters in C#
 - A command line argument parser.
 - Live help
 - Auto command completion
+- Works with .NET Framework 4.5 or better, .NET Standard 2.0, and .NET Core 2.0
 
 ## Prerequisites
-- A C# compiler to build the files. I used Visual Studio 2015.
-- A version of the .NET Framework or Mono, starting with 4.5
+- A C# compiler to build the files. 
+- Visual Studio 2017 is required to build the solution.
 
 I developed this for use on Windows systems, but I did some testing using Mono on Mac. It is possible that the code will
 work on earlier versions of the .NET Framework but I have had no reason to even try.
