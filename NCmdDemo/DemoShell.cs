@@ -9,7 +9,7 @@ namespace NCmdDemo
         /// <summary>
         /// help text for the 'date' command.
         /// </summary>
-        private const string ShowDateHelpText = "Displays the current date";
+        private const string _SHOW_DATE_HELP_TEXT = "Displays the current date";
 
         /// <summary>
         /// Help text for the 'time' command. This method shows how to use
@@ -17,14 +17,14 @@ namespace NCmdDemo
         /// time command.
         /// </summary>
         [CmdCommandHelp("time")]
-        public const string ShowTimeHelpText = "Displays the current time";
+        public const string SHOW_TIME_HELP_TEXT = "Displays the current time";
 
         /// <summary>
         /// Help_exit shows a method of documenting a command by naming convention.
         /// </summary>
-        public const string Help_exit = "Exit the program.";
+        public const string HELP_EXIT = "Exit the program.";
 
-        [CmdCommand(Command = "date", Description = ShowDateHelpText)]
+        [CmdCommand(Command = "date", Description = _SHOW_DATE_HELP_TEXT)]
         public void ShowDate(string arg)
         {
             Console.WriteLine(DateTime.Now.ToShortDateString());    
@@ -103,6 +103,7 @@ namespace NCmdDemo
             
         }
 
+        /// <inheritdoc />
         /// <summary>
         /// EmptyLine can be overriden to handle case where the user has entered 
         /// a blank line. The default case is to do nothing. In this case we 
@@ -114,6 +115,7 @@ namespace NCmdDemo
             Console.WriteLine("Please enter a command or type 'help' for assitance.");
         }
 
+        /// <inheritdoc />
         /// <summary>
         /// PreLoop can be overridden to perfom and sort of remaining 
         /// initialization that is required right before entering the

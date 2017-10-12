@@ -103,7 +103,7 @@ namespace NCmd
         private static string GetAuthorStatement(string[] auths)
         {
             var s = "Written by ";
-            var len = auths.Length;
+            int len = auths.Length;
             switch (len)
             {
                 case 1:

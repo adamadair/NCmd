@@ -32,7 +32,7 @@ namespace NCmd
     using System.Reflection;
     using System.Security;
     using System.Text;
-    using C = NCmd.SimpleConsole;
+    using C = SimpleConsole;
 
 
     /// <summary>
@@ -42,8 +42,8 @@ namespace NCmd
     /// </summary>
     public abstract class Cmd
     {
-        private const string DocumentedCommandsText = "Documented commands (type help <topic>):";
-        private const string UndocumentedCommandsText = "Undocumented Commands:";
+        private const string _DOCUMENTED_COMMANDS_TEXT = "Documented commands (type help <topic>):";
+        private const string _UNDOCUMENTED_COMMANDS_TEXT = "Undocumented Commands:";
 
         private bool _isInLoop;
         private bool _isInitialized;
@@ -519,8 +519,8 @@ namespace NCmd
 
             if (documented.Count > 0)
             {
-                sb.Append("\n" + DocumentedCommandsText + "\n");
-                for (var i = 0; i < DocumentedCommandsText.Length; ++i)
+                sb.Append("\n" + _DOCUMENTED_COMMANDS_TEXT + "\n");
+                for (var i = 0; i < _DOCUMENTED_COMMANDS_TEXT.Length; ++i)
                     sb.Append("=");
                 sb.Append("\n");
                 var cCount = 0;
@@ -542,8 +542,8 @@ namespace NCmd
             if (undocumented.Count > 0)
             {
                 var cCount = 0;
-                sb.Append("\n" + UndocumentedCommandsText + "\n");
-                for (var i = 0; i < UndocumentedCommandsText.Length; ++i)
+                sb.Append("\n" + _UNDOCUMENTED_COMMANDS_TEXT + "\n");
+                for (var i = 0; i < _UNDOCUMENTED_COMMANDS_TEXT.Length; ++i)
                     sb.Append("=");
                 sb.Append("\n");
                 foreach (var d in undocumented)

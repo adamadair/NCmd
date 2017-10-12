@@ -86,11 +86,7 @@ namespace NCmd
 
         public RelayCommand(Action<string> execute)
         {
-            if (execute == null)
-            {
-                throw new ArgumentNullException(nameof(execute));
-            }
-            this._execute = execute;
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
         }
         public void Execute(string arg)
         {

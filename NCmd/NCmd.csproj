@@ -1,61 +1,37 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{9338D8E9-E4AD-4005-B0F7-F24D4436B9C1}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NCmd</RootNamespace>
-    <AssemblyName>NCmd</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
+    <TargetFrameworks>net452;net462;netstandard2.0;netcoreapp2.0</TargetFrameworks>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+    <FileVersion>1.0.3.0</FileVersion>
+    <Version>1.0.3</Version>
+    <Description>- Provides the Cmd class to quickly create command line shell program.
+- Shell commands can be created using method naming conventions or method arguments.
+- A command line argument parser.
+- Live help
+- Auto command completion</Description>
+    <Copyright>Copyright (c) Adam Adair 2017</Copyright>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/adamadair/NCmd/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/adamadair/NCmd</PackageProjectUrl>
+    <PackageIconUrl>http://www.adairpub.com/AWA3.png</PackageIconUrl>
+    <PackageTags>console command line CLI</PackageTags>
+    <PackageReleaseNotes>The initial release of the NCmd library which makes it easier to write console based programs by providing the following features:
+
+1) Provides the Cmd class to quickly create command line shell program.
+2) Shell commands can be created using method naming conventions or method arguments.
+3) A command line argument parser.
+4) Live help
+5) Auto command completion
+
+Bug Fixes 1.0.1:
+1) Fixed problem causing null reference exceptions when calling CmdLoop().
+
+Bug Fixes 1.0.2:
+1) Fixed bug in LineEditor class that caused expections with auto complete for commands of similar spelling.
+
+Verions 1.0.3:
+Builds for .NET Core and .NET Standard 2.0 added</PackageReleaseNotes>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Attributes.cs" />
-    <Compile Include="Cmd.cs" />
-    <Compile Include="Command.cs" />
-    <Compile Include="LineEditor.cs" />
-    <Compile Include="ArgParse.cs" />
-    <Compile Include="ProgramMetaData.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SimpleConsole.cs" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

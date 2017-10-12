@@ -44,6 +44,7 @@ namespace NCmd
         string LicenseStatement { get; set; }
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// A default implementation of IProgramMetaData that can
     /// be used for any reason. The gotcha here is that the 
@@ -60,65 +61,66 @@ namespace NCmd
         public DateTime? BuildDateTime { get; set; }
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// AutoProgramMetaData takes an assembly and tries to use reflection
     /// to fill out as many of the IProgramMetaData members as possible. 
     /// </summary>
     public class AutoProgramMetaData : ProgramMetaData
     {
-        public const string DefaultLicenseStatement = "{0} \n" +
+        public const string DEFAULT_LICENSE_STATEMENT = "{0} \n" +
             "This is free software; see the source for copying conditions.  There is NO \n" +
             "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
 
-        private Assembly assembly;
+        private readonly Assembly _assembly;
 
         public AutoProgramMetaData(Assembly a)
         {
-            assembly = a;            
-            this.Version = GetVersion();
-            this.Title = GetTitle();
-            this.Description = GetDescription();
-            this.Copyright = GetCopyright();
-            this.LicenseStatement = GetLicenseStatement();
-            this.BuildDateTime = GetLinkerTime(TimeZoneInfo.Local);
+            _assembly = a;            
+            Version = GetVersion();
+            Title = GetTitle();
+            Description = GetDescription();
+            Copyright = GetCopyright();
+            LicenseStatement = GetLicenseStatement();
+            BuildDateTime = GetLinkerTime(TimeZoneInfo.Local);
         }
 
         #region Reflection methods for getting information about assembly
         private string GetVersion()
         {
-            return assembly.GetName().Version.ToString();
+            return _assembly.GetName().Version.ToString();
         }
 
         private string GetTitle()
         {
-            var attributes = assembly.GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
+            object[] attributes = _assembly.GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
             if (attributes.Length <= 0)
-                return System.IO.Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().CodeBase);
+                return Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().CodeBase);
             var titleAttribute = (AssemblyTitleAttribute) attributes[0];
-            return titleAttribute.Title.Length > 0 ? titleAttribute.Title : System.IO.Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().CodeBase);
+            return titleAttribute.Title.Length > 0 ? titleAttribute.Title : Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().CodeBase);
         }
 
         private string GetDescription()
         {
-            var attributes = assembly.GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false);
+            object[] attributes = _assembly.GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false);
             return attributes.Length == 0 ? "" : ((AssemblyDescriptionAttribute)attributes[0]).Description;
         }
 
         private string GetCopyright()
         {
-            var attributes = assembly.GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
+            object[] attributes = _assembly.GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
             return attributes.Length == 0 ? "" : ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
 
         }
 
         private string GetLicenseStatement()
         {
-            return string.Format(DefaultLicenseStatement, GetCopyright());
+            return string.Format(DEFAULT_LICENSE_STATEMENT, GetCopyright());
         }
 
         private DateTime? GetLinkerTime(TimeZoneInfo target = null)
         {
-            var filePath = assembly.Location;
+            string filePath = _assembly.Location;
             const int cPeHeaderOffset = 60;
             const int cLinkerTimestampOffset = 8;
 
@@ -127,15 +129,15 @@ namespace NCmd
             using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                 stream.Read(buffer, 0, 2048);
 
-            var offset = BitConverter.ToInt32(buffer, cPeHeaderOffset);
-            var secondsSince1970 = BitConverter.ToInt32(buffer, offset + cLinkerTimestampOffset);
+            int offset = BitConverter.ToInt32(buffer, cPeHeaderOffset);
+            int secondsSince1970 = BitConverter.ToInt32(buffer, offset + cLinkerTimestampOffset);
             if (secondsSince1970 == 0) return null;
             var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-            var linkTimeUtc = epoch.AddSeconds(secondsSince1970);
+            DateTime linkTimeUtc = epoch.AddSeconds(secondsSince1970);
 
-            var tz = target ?? TimeZoneInfo.Local;
-            var localTime = TimeZoneInfo.ConvertTimeFromUtc(linkTimeUtc, tz);
+            TimeZoneInfo tz = target ?? TimeZoneInfo.Local;
+            DateTime localTime = TimeZoneInfo.ConvertTimeFromUtc(linkTimeUtc, tz);
 
             return localTime;
         }

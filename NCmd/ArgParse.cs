@@ -1224,9 +1224,7 @@ namespace NCmd
 
             public ActionArgument(string prototype, string description, int count, Action<ArgumentValueCollection> action, bool hidden) : base(prototype, description, count, hidden)
             {
-                if (action == null)
-                    throw new ArgumentNullException(nameof(action));
-                _action = action;
+                _action = action ?? throw new ArgumentNullException(nameof(action));
             }
 
             protected override void OnParseComplete(ArgumentContext c)
@@ -1241,9 +1239,7 @@ namespace NCmd
 
             public ActionArgument(string prototype, string description, Action<T> action) : base(prototype, description, 1)
             {
-                if (action == null)
-                    throw new ArgumentNullException(nameof(action));
-                _action = action;
+                _action = action ?? throw new ArgumentNullException(nameof(action));
             }
 
             protected override void OnParseComplete(ArgumentContext c)
@@ -1258,9 +1254,7 @@ namespace NCmd
 
             public ActionArgument(string prototype, string description, ArgumentAction<TKey, TValue> action) : base(prototype, description, 2)
             {
-                if (action == null)
-                    throw new ArgumentNullException(nameof(action));
-                _action = action;
+                _action = action ?? throw new ArgumentNullException(nameof(action));
             }
 
             protected override void OnParseComplete(ArgumentContext c)

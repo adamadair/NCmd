@@ -32,6 +32,7 @@ namespace NCmd
 
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// CmdCommand attribute can be used to identify methods as 
     /// </summary>
@@ -53,15 +54,15 @@ namespace NCmd
         public string Description { get; set; }
     }
 
+    /// <inheritdoc />
     /// <summary>
-    /// 
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field )]
     public class CmdCommandHelpAttribute : Attribute
     {
         public CmdCommandHelpAttribute(string command)
         {
-            this.Command = command;
+            Command = command;
         }
 
         public string Command { get; }
