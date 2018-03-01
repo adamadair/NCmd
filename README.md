@@ -20,4 +20,4 @@ work on earlier versions of the .NET Framework but I have had no reason to even 
 
 Documentation on getting started with NCmd can be found in the [Wiki](https://github.com/adamadair/NCmd/wiki)
 
-[![Everything Is AWESOME](http://i.imgur.com/Ot5DWAW.png)](https://youtu.be/StTqXEQ2l-Y?t=35s "Everything Is AWESOME")
+
